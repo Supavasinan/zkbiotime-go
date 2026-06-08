@@ -3,6 +3,7 @@ package zkbiotime
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 )
 
 // Paginated is the standard DRF list envelope returned by BioTime list endpoints.
@@ -99,6 +100,22 @@ func (s *FlexString) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// FlexBool decodes a value the server may return as a bool (`true`), a number
+// (`1`), or a numeric string (`"1"`) — e.g. a terminal's `is_attendance`.
+type FlexBool bool
+
+func (f *FlexBool) UnmarshalJSON(b []byte) error {
+	switch strings.Trim(strings.TrimSpace(string(b)), `"`) {
+	case "", "null":
+		return nil
+	case "true", "1":
+		*f = true
+	default:
+		*f = false
+	}
+	return nil
+}
+
 // ─── Read models ──────────────────────────────────────────────────────────────
 
 // AttEmployee is the nested attendance-settings object on an employee.
@@ -167,17 +184,19 @@ type Department struct {
 }
 
 type Area struct {
-	ID         int    `json:"id"`
-	AreaCode   string `json:"area_code"`
-	AreaName   string `json:"area_name"`
-	ParentArea *Ref   `json:"parent_area,omitempty"`
+	ID             int    `json:"id"`
+	AreaCode       string `json:"area_code"`
+	AreaName       string `json:"area_name"`
+	ParentArea     *Ref   `json:"parent_area,omitempty"`
+	ParentAreaName string `json:"parent_area_name,omitempty"`
 }
 
 type Position struct {
-	ID             int    `json:"id"`
-	PositionCode   string `json:"position_code"`
-	PositionName   string `json:"position_name"`
-	ParentPosition *Ref   `json:"parent_position,omitempty"`
+	ID                 int    `json:"id"`
+	PositionCode       string `json:"position_code"`
+	PositionName       string `json:"position_name"`
+	ParentPosition     *Ref   `json:"parent_position,omitempty"`
+	ParentPositionName string `json:"parent_position_name,omitempty"`
 }
 
 type Resign struct {
@@ -191,23 +210,50 @@ type Resign struct {
 }
 
 type Terminal struct {
-	ID           int        `json:"id"`
-	SN           string     `json:"sn"`
-	Alias        string     `json:"alias,omitempty"`
-	IPAddress    string     `json:"ip_address,omitempty"`
-	Area         Ref        `json:"area,omitempty"` // nested {id,area_code,area_name} on read
-	AreaName     string     `json:"area_name,omitempty"`
-	State        FlexString `json:"state,omitempty"` // "1" or 1 depending on instance
-	LastActivity string     `json:"last_activity,omitempty"`
+	ID               int        `json:"id"`
+	SN               string     `json:"sn"`
+	IPAddress        string     `json:"ip_address,omitempty"`
+	Alias            string     `json:"alias,omitempty"`
+	TerminalName     string     `json:"terminal_name,omitempty"`
+	FwVer            string     `json:"fw_ver,omitempty"`
+	PushVer          string     `json:"push_ver,omitempty"`
+	State            FlexString `json:"state,omitempty"` // "1" or 1 depending on instance
+	TerminalTZ       *int       `json:"terminal_tz,omitempty"`
+	Area             Ref        `json:"area,omitempty"` // nested {id,area_code,area_name} on read
+	AreaName         string     `json:"area_name,omitempty"`
+	LastActivity     string     `json:"last_activity,omitempty"`
+	UserCount        *int       `json:"user_count,omitempty"`
+	FpCount          *int       `json:"fp_count,omitempty"`
+	FaceCount        *int       `json:"face_count,omitempty"`
+	PalmCount        *int       `json:"palm_count,omitempty"`
+	TransactionCount *int       `json:"transaction_count,omitempty"`
+	PushTime         string     `json:"push_time,omitempty"`
+	TransferTime     string     `json:"transfer_time,omitempty"`
+	TransferInterval *int       `json:"transfer_interval,omitempty"`
+	IsAttendance     FlexBool   `json:"is_attendance,omitempty"` // 1/true depending on instance
 }
 
 type Transaction struct {
-	ID            int    `json:"id"`
-	EmpCode       string `json:"emp_code"`
-	PunchTime     string `json:"punch_time"`
-	PunchState    string `json:"punch_state,omitempty"`
-	TerminalSN    string `json:"terminal_sn,omitempty"`
-	TerminalAlias string `json:"terminal_alias,omitempty"`
+	ID                int        `json:"id"`
+	Emp               *int       `json:"emp,omitempty"`
+	EmpCode           string     `json:"emp_code"`
+	FirstName         string     `json:"first_name,omitempty"`
+	LastName          string     `json:"last_name,omitempty"`
+	Department        FlexString `json:"department,omitempty"` // denormalized name/id string in this context
+	Position          FlexString `json:"position,omitempty"`
+	PunchTime         string     `json:"punch_time"`
+	PunchState        FlexString `json:"punch_state,omitempty"`
+	PunchStateDisplay string     `json:"punch_state_display,omitempty"`
+	VerifyType        *int       `json:"verify_type,omitempty"`
+	VerifyTypeDisplay string     `json:"verify_type_display,omitempty"`
+	WorkCode          string     `json:"work_code,omitempty"`
+	GPSLocation       string     `json:"gps_location,omitempty"`
+	AreaAlias         string     `json:"area_alias,omitempty"`
+	TerminalSN        string     `json:"terminal_sn,omitempty"`
+	Temperature       float64    `json:"temperature,omitempty"`
+	IsMask            string     `json:"is_mask,omitempty"`
+	TerminalAlias     string     `json:"terminal_alias,omitempty"`
+	UploadTime        string     `json:"upload_time,omitempty"`
 }
 
 // ─── Write inputs ─────────────────────────────────────────────────────────────
