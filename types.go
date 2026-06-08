@@ -77,6 +77,28 @@ func (l *RefList) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// FlexString decodes a value that the server may return as either a JSON string
+// or a JSON number (BioTime returns e.g. a terminal's `state` as "1" on some
+// instances and 1 on others). It always reads as a string.
+type FlexString string
+
+func (s *FlexString) UnmarshalJSON(b []byte) error {
+	b = bytes.TrimSpace(b)
+	if len(b) == 0 || string(b) == "null" {
+		return nil
+	}
+	if b[0] == '"' {
+		var str string
+		if err := json.Unmarshal(b, &str); err != nil {
+			return err
+		}
+		*s = FlexString(str)
+		return nil
+	}
+	*s = FlexString(b)
+	return nil
+}
+
 // ─── Read models ──────────────────────────────────────────────────────────────
 
 type Employee struct {
@@ -84,7 +106,9 @@ type Employee struct {
 	EmpCode      string  `json:"emp_code"`
 	FirstName    string  `json:"first_name,omitempty"`
 	LastName     string  `json:"last_name,omitempty"`
+	FullName     string  `json:"full_name,omitempty"`
 	Nickname     string  `json:"nickname,omitempty"`
+	Photo        string  `json:"photo,omitempty"`
 	Department   Ref     `json:"department,omitempty"` // id or {id,dept_code,dept_name}
 	DeptName     string  `json:"dept_name,omitempty"`
 	Area         RefList `json:"area,omitempty"` // [id] or [{id,area_code,area_name}]
@@ -132,14 +156,14 @@ type Resign struct {
 }
 
 type Terminal struct {
-	ID           int    `json:"id"`
-	SN           string `json:"sn"`
-	Alias        string `json:"alias,omitempty"`
-	IPAddress    string `json:"ip_address,omitempty"`
-	Area         Ref    `json:"area,omitempty"` // nested {id,area_code,area_name} on read
-	AreaName     string `json:"area_name,omitempty"`
-	State        *int   `json:"state,omitempty"`
-	LastActivity string `json:"last_activity,omitempty"`
+	ID           int        `json:"id"`
+	SN           string     `json:"sn"`
+	Alias        string     `json:"alias,omitempty"`
+	IPAddress    string     `json:"ip_address,omitempty"`
+	Area         Ref        `json:"area,omitempty"` // nested {id,area_code,area_name} on read
+	AreaName     string     `json:"area_name,omitempty"`
+	State        FlexString `json:"state,omitempty"` // "1" or 1 depending on instance
+	LastActivity string     `json:"last_activity,omitempty"`
 }
 
 type Transaction struct {
