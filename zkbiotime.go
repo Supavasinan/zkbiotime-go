@@ -92,10 +92,11 @@ func New(opts Options) (*Client, error) {
 // BaseURL returns the configured base URL.
 func (c *Client) BaseURL() string { return c.baseURL }
 
-// Do performs a raw request against the BioTime server. If body is non-nil it is
-// JSON-encoded; if out is non-nil the JSON response is decoded into it. A non-2xx
-// status returns an *APIError.
-func (c *Client) Do(ctx context.Context, method, path string, query url.Values, body, out any) error {
+// Raw performs a request and returns the HTTP status and the undecoded response
+// body, treating a non-2xx status as a normal result (no error). It's an escape
+// hatch for passthrough/proxy scenarios where you need the exact status and bytes.
+// Only a transport-level failure returns a non-nil error.
+func (c *Client) Raw(ctx context.Context, method, path string, query url.Values, body any) (int, []byte, error) {
 	u := c.baseURL + path
 	if len(query) > 0 {
 		u += "?" + query.Encode()
@@ -104,13 +105,13 @@ func (c *Client) Do(ctx context.Context, method, path string, query url.Values, 
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("zkbiotime: encode body: %w", err)
+			return 0, nil, fmt.Errorf("zkbiotime: encode body: %w", err)
 		}
 		reader = bytes.NewReader(b)
 	}
 	req, err := http.NewRequestWithContext(ctx, method, u, reader)
 	if err != nil {
-		return err
+		return 0, nil, err
 	}
 	req.Header.Set("Authorization", c.authHeader)
 	req.Header.Set("Accept", "application/json")
@@ -119,15 +120,26 @@ func (c *Client) Do(ctx context.Context, method, path string, query url.Values, 
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return err
+		return 0, nil, err
 	}
 	defer resp.Body.Close()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
+		return resp.StatusCode, nil, err
+	}
+	return resp.StatusCode, data, nil
+}
+
+// Do performs a request against the BioTime server. If body is non-nil it is
+// JSON-encoded; if out is non-nil the JSON response is decoded into it. A non-2xx
+// status returns an *APIError.
+func (c *Client) Do(ctx context.Context, method, path string, query url.Values, body, out any) error {
+	status, data, err := c.Raw(ctx, method, path, query, body)
+	if err != nil {
 		return err
 	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return newAPIError(resp.StatusCode, string(data), method, path)
+	if status < 200 || status >= 300 {
+		return newAPIError(status, string(data), method, path)
 	}
 	if out != nil && len(data) > 0 {
 		if err := json.Unmarshal(data, out); err != nil {

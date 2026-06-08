@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -163,6 +164,24 @@ func TestReportsTargetAttApi(t *testing.T) {
 	defer srv.Close()
 	if _, err := c.Reports.Get(context.Background(), "transactionReport", nil); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRaw(t *testing.T) {
+	c, srv := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"detail":"nope"}`))
+	})
+	defer srv.Close()
+	status, body, err := c.Raw(context.Background(), "GET", "/whatever/", nil, nil)
+	if err != nil {
+		t.Fatal(err) // Raw must NOT error on non-2xx
+	}
+	if status != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", status)
+	}
+	if !strings.Contains(string(body), "nope") {
+		t.Errorf("body = %s", body)
 	}
 }
 
