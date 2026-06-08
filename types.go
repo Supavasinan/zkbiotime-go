@@ -101,27 +101,62 @@ func (s *FlexString) UnmarshalJSON(b []byte) error {
 
 // ─── Read models ──────────────────────────────────────────────────────────────
 
+// AttEmployee is the nested attendance-settings object on an employee.
+type AttEmployee struct {
+	ID               int  `json:"id"`
+	EnableAttendance bool `json:"enable_attendance"`
+	EnableOvertime   bool `json:"enable_overtime"`
+	EnableHoliday    bool `json:"enable_holiday"`
+	EnableSchedule   bool `json:"enable_schedule"`
+}
+
+// Employee mirrors the full personnel/employees read payload. FK fields
+// (department, position, area) arrive as a bare id or a nested object; Ref/RefList
+// handle both. Nullable scalars use pointers so null is distinguishable from zero.
 type Employee struct {
-	ID           int     `json:"id"`
-	EmpCode      string  `json:"emp_code"`
-	FirstName    string  `json:"first_name,omitempty"`
-	LastName     string  `json:"last_name,omitempty"`
-	FullName     string  `json:"full_name,omitempty"`
-	Nickname     string  `json:"nickname,omitempty"`
-	Photo        string  `json:"photo,omitempty"`
-	Department   Ref     `json:"department,omitempty"` // id or {id,dept_code,dept_name}
-	DeptName     string  `json:"dept_name,omitempty"`
-	Area         RefList `json:"area,omitempty"` // [id] or [{id,area_code,area_name}]
-	AreaName     string  `json:"area_name,omitempty"`
-	Position     Ref     `json:"position,omitempty"`
-	PositionName string  `json:"position_name,omitempty"`
-	Gender       string  `json:"gender,omitempty"`
-	Birthday     string  `json:"birthday,omitempty"`
-	HireDate     string  `json:"hire_date,omitempty"`
-	Mobile       string  `json:"mobile,omitempty"`
-	Email        string  `json:"email,omitempty"`
-	CardNo       string  `json:"card_no,omitempty"`
-	AppStatus    *int    `json:"app_status,omitempty"`
+	ID             int          `json:"id"`
+	EmpCode        string       `json:"emp_code"`
+	FirstName      string       `json:"first_name,omitempty"`
+	LastName       string       `json:"last_name,omitempty"`
+	FullName       string       `json:"full_name,omitempty"`
+	FormatName     string       `json:"format_name,omitempty"`
+	Nickname       string       `json:"nickname,omitempty"`
+	Photo          string       `json:"photo,omitempty"`
+	DevicePassword string       `json:"device_password,omitempty"`
+	CardNo         string       `json:"card_no,omitempty"`
+	Department     Ref          `json:"department,omitempty"` // id or {id,dept_code,dept_name}
+	DeptName       string       `json:"dept_name,omitempty"`
+	Position       Ref          `json:"position,omitempty"`
+	PositionName   string       `json:"position_name,omitempty"`
+	Area           RefList      `json:"area,omitempty"` // [id] or [{id,area_code,area_name}]
+	AreaName       string       `json:"area_name,omitempty"`
+	HireDate       string       `json:"hire_date,omitempty"`
+	Gender         string       `json:"gender,omitempty"`
+	Birthday       string       `json:"birthday,omitempty"`
+	VerifyMode     *int         `json:"verify_mode,omitempty"`
+	EmpType        *int         `json:"emp_type,omitempty"`
+	ContactTel     string       `json:"contact_tel,omitempty"`
+	OfficeTel      string       `json:"office_tel,omitempty"`
+	Mobile         string       `json:"mobile,omitempty"`
+	National       string       `json:"national,omitempty"`
+	City           string       `json:"city,omitempty"`
+	Address        string       `json:"address,omitempty"`
+	Postcode       string       `json:"postcode,omitempty"`
+	Email          string       `json:"email,omitempty"`
+	EnrollSN       string       `json:"enroll_sn,omitempty"`
+	SSN            string       `json:"ssn,omitempty"`
+	Religion       string       `json:"religion,omitempty"`
+	AttEmployee    *AttEmployee `json:"attemployee,omitempty"`
+	DevPrivilege   *int         `json:"dev_privilege,omitempty"`
+	AppStatus      *int         `json:"app_status,omitempty"`
+	AppRole        *int         `json:"app_role,omitempty"`
+	UpdateTime     string       `json:"update_time,omitempty"`
+	Fingerprint    string       `json:"fingerprint,omitempty"`
+	Face           string       `json:"face,omitempty"`
+	Palm           string       `json:"palm,omitempty"`
+	VLFace         string       `json:"vl_face,omitempty"`
+	VLPalm         string       `json:"vl_palm,omitempty"`
+	VLFacePhoto    string       `json:"vl_face_photo,omitempty"`
 }
 
 type Department struct {
